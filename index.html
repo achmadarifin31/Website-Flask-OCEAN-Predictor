@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prediksi Kepribadian OCEAN</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <style>
+    #spinner {
+      display: none;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    #spinner img {
+      width: 80px;
+      height: 80px;
+    }
+    .trait-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1.5rem;
+      font-size: 0.95rem;
+    }
+    .trait-table th,
+    .trait-table td {
+      border: 1px solid #ddd;
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+    }
+    .trait-table th {
+      background-color: #d63384;
+      color: white;
+    }
+    .trait-table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    .trait-table tr:hover {
+      background-color: #f1f1f1;
+    }
+  </style>
+</head>
+<body>
+  <header style="text-align: center;">
+    <img src="/static/unesa-logo.png" alt="Logo UNESA" style="width: 100px; height: auto; display: block; margin: 0 auto 10px;" />
+    <h1>PREDIKSI KEPRIBADIAN MENGGUNAKAN TEKNIK TRANSFER LEARNING VGG-FACE BERBASIS VIDEO</h1>
+  </header>
+
+  <div class="layout">
+    <div class="left-panel">
+      <div class="name-form">
+        <label for="username">Nama Anda:</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          placeholder="Masukkan Nama Anda"
+          value="{{ username }}"
+          required
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="tabs">
+        <button id="tab-upload" class="tab active">Upload Video</button>
+        <button id="tab-camera" class="tab">Rekam Kamera</button>
+      </div>
+
+      <div id="upload-section">
+        <form id="upload-form" enctype="multipart/form-data" method="post">
+          <div class="file-select">
+            <input
+              type="file"
+              id="video-file"
+              name="video"
+              accept="video/*"
+              onchange="previewVideo(event)"
+              required
+            />
+            <div class="file-help">Format yang didukung: MP4, WebM, AVI, MOV (Maks. 50MB)</div>
+          </div>
+          <input type="submit" value="Analisis Video" />
+        </form>
+
+        <div
+          class="video-preview"
+          id="upload-preview"
+          style="display: {% if video_path %}block{% else %}none{% endif %};"
+        >
+          <h3>Preview Video:</h3>
+          <video id="video-player" controls {% if video_path %} src="{{ video_path }}" {% endif %}></video>
+        </div>
+      </div>
+
+      <div id="camera-section" style="display: none;">
+        <div class="video-container">
+          <video id="camera-stream" autoplay muted playsinline></video>
+          <video id="recorded-player" controls style="display: none;"></video>
+          <div id="camera-error" class="camera-error" style="display: none;">
+            <p>Tidak dapat mengakses kamera. Pastikan Anda memberikan izin akses kamera.</p>
+          </div>
+        </div>
+        <div class="camera-controls">
+          <button id="start-record" class="record-button">▶️ Mulai Merekam</button>
+          <button id="stop-record" class="stop-button" disabled>🛑 Hentikan</button>
+          <button id="process-record" class="primary-button" style="display: none;">Analisis Video</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div id="spinner">
+        <img src="/static/spinner.gif" alt="Loading..." />
+        <p>Memproses, mohon tunggu...</p>
+      </div>
+
+      <div id="content-container" style="display: {% if loading %}none{% else %}block{% endif %};">
+        <div class="result-header">
+          <h3>Hasil Prediksi Kepribadian</h3>
+        </div>
+
+        {% if prediction and prediction.Error %}
+          <div class="error-message" style="color: #b30000; font-weight: 600;">
+            ⚠️ {{ prediction.Error }}
+          </div>
+        {% elif prediction and not prediction.Error %}
+          <div class="results">
+            {% for trait in ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'] %}
+              {% if trait in prediction %}
+                <div class="trait">
+                  <div class="trait-label">
+                    <strong>{{ trait }}</strong>
+                    <span class="trait-value">{{ prediction[trait] }}%</span>
+                    <span style="font-weight: normal; font-style: italic; margin-left: 8px; color: #666;">
+                      ({{ labels[trait] if labels and trait in labels else '' }})
+                    </span>
+                  </div>
+                  <div class="bar">
+                    <div class="bar-fill {{ trait|lower }}" style="width:{{ prediction[trait] }}%"></div>
+                  </div>
+                </div>
+              {% endif %}
+            {% endfor %}
+
+            {% if description %}
+              <div class="summary" style="margin-top: 1.5rem; font-style: italic; color: #444;">
+                🧠 <strong>Ringkasan:</strong> {{ description }}
+              </div>
+            {% endif %}
+
+            <h3 style="margin-top: 2rem;">Karakteristik Tingkat Rendah dan Tingkat Tinggi pada Setiap Dimensi OCEAN</h3>
+            <table class="trait-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Sifat-sifat</th>
+                  <th>Tingkat Rendah</th>
+                  <th>Tingkat Tinggi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1</td>
+                  <td>Openness</td>
+                  <td>Konvensional, praktis, skeptis</td>
+                  <td>Imajinatif, ingin tahu, kreatif</td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td>Conscientiousness</td>
+                  <td>Ceroboh, spontan, hedonistik</td>
+                  <td>Pekerja keras, terorganisir, tepat waktu</td>
+                </tr>
+                <tr>
+                  <td>3</td>
+                  <td>Extraversion</td>
+                  <td>Menikmati waktu sendiri, menyendiri, tenang</td>
+                  <td>Aktif, supel, mencari kegembiraan</td>
+                </tr>
+                <tr>
+                  <td>4</td>
+                  <td>Neuroticism</td>
+                  <td>Tidak peduli, tidak kooperatif</td>
+                  <td>Berempati, percaya, patuh</td>
+                </tr>
+                <tr>
+                  <td>5</td>
+                  <td>Agreeableness</td>
+                  <td>Puas diri, stabil secara emosional</td>
+                  <td>Emosi negatif, rentan terhadap stres</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="download-links">
+              <a href="/static/result_{{ username.replace(' ', '_') }}.csv" class="download-button" download>⬇️ Download CSV</a>
+              <a href="/static/result_{{ username.replace(' ', '_') }}.pdf" class="download-button" download>⬇️ Download PDF</a>
+            </div>
+          </div>
+        {% else %}
+          <p>Silakan unggah atau rekam video untuk memulai analisis.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+<script>
+  const usernameInput = document.getElementById('username');
+  
+  function previewVideo(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const videoPlayer = document.getElementById('video-player');
+      videoPlayer.src = url;
+      videoPlayer.load();
+
+      const previewContainer = document.getElementById('upload-preview');
+      previewContainer.style.display = 'block';
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const tabUpload = document.getElementById('tab-upload');
+    const tabCamera = document.getElementById('tab-camera');
+    const uploadSection = document.getElementById('upload-section');
+    const cameraSection = document.getElementById('camera-section');
+    const videoFileInput = document.getElementById('video-file');
+    const previewContainer = document.getElementById('upload-preview');
+    const startBtn = document.getElementById('start-record');
+    const stopBtn = document.getElementById('stop-record');
+    const processBtn = document.getElementById('process-record');
+    const recordedPlayer = document.getElementById('recorded-player');
+    const cameraStream = document.getElementById('camera-stream');
+    const spinner = document.getElementById('spinner');
+    const contentContainer = document.getElementById('content-container');
+
+    // Reset ke tampilan awal saat reload
+    tabUpload.classList.add('active');
+    tabCamera.classList.remove('active');
+    uploadSection.style.display = 'block';
+    cameraSection.style.display = 'none';
+    usernameInput.value = '';
+    videoFileInput.value = '';
+    previewContainer.style.display = 'none';
+    recordedPlayer.style.display = 'none';
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    startBtn.style.display = 'inline-block';
+    stopBtn.style.display = 'none';
+    processBtn.style.display = 'none';
+
+    // Tab switching
+    tabUpload.onclick = () => {
+      tabUpload.classList.add('active');
+      tabCamera.classList.remove('active');
+      uploadSection.style.display = 'block';
+      cameraSection.style.display = 'none';
+    };
+
+    tabCamera.onclick = () => {
+      tabCamera.classList.add('active');
+      tabUpload.classList.remove('active');
+      uploadSection.style.display = 'none';
+      cameraSection.style.display = 'block';
+
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      processBtn.style.display = 'none';
+      recordedPlayer.style.display = 'none';
+
+      if (!cameraStream.srcObject) {
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+          .then((stream) => {
+            cameraStream.srcObject = stream;
+            window.mediaStream = stream;
+          })
+          .catch(() => {
+            document.getElementById('camera-error').style.display = 'block';
+          });
+      }
+    };
+
+    // Upload form submit dengan spinner
+    const uploadForm = document.getElementById('upload-form');
+    uploadForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      if (!videoFileInput.files.length) {
+        alert('Silakan pilih file video terlebih dahulu.');
+        return;
+      }
+      const username = usernameInput.value.trim();
+      if (!username) {
+        alert('Nama pengguna wajib diisi.');
+        return;
+      }
+
+      spinner.style.display = 'block';
+      contentContainer.style.display = 'none';
+
+      const formData = new FormData();
+      formData.append('username', username);
+      formData.append('video', videoFileInput.files[0]);
+
+      fetch('/', {
+        method: 'POST',
+        body: formData,
+      })
+        .then((resp) => resp.text())
+        .then((html) => {
+          spinner.style.display = 'none';
+          contentContainer.style.display = 'block';
+
+          document.open();
+          document.write(html);
+          document.close();
+        })
+        .catch(() => {
+          spinner.style.display = 'none';
+          contentContainer.style.display = 'block';
+          alert('Gagal mengirim video.');
+        });
+    });
+
+    // Rekam kamera start
+    startBtn.onclick = () => {
+      startBtn.style.display = 'none';
+      stopBtn.style.display = 'inline-block';
+      let recordedChunks = [];
+      const mediaRecorder = new MediaRecorder(window.mediaStream);
+      mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        recordedPlayer.src = url;
+        recordedPlayer.style.display = 'block';
+
+        const username = usernameInput.value.trim();
+        if (!username) {
+          alert('Nama pengguna wajib diisi.');
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('username', username);
+        formData.append('video', blob, 'recorded.webm');
+
+        processBtn.style.display = 'inline-block';
+        processBtn.onclick = () => {
+          spinner.style.display = 'block';
+          contentContainer.style.display = 'none';
+
+          fetch('/', { method: 'POST', body: formData })
+            .then(resp => resp.text())
+            .then(html => {
+              spinner.style.display = 'none';
+              contentContainer.style.display = 'block';
+
+              document.open();
+              document.write(html);
+              document.close();
+            })
+            .catch(() => {
+              spinner.style.display = 'none';
+              contentContainer.style.display = 'block';
+              alert('Gagal mengirim video.');
+            });
+        };
+      };
+
+      mediaRecorder.start();
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+
+      stopBtn.onclick = () => {
+        stopBtn.style.display = 'none';
+        startBtn.style.display = 'inline-block';
+        mediaRecorder.stop();
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+      };
+    };
+
+    // Default aktif tab Upload
+    tabUpload.click();
+  });
+</script>
+</body>
+</html>
