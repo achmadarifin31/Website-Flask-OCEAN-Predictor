@@ -81,7 +81,16 @@ project/
 ├── requirements.txt
 └── README.md
 
-## 📚 References
+## 📚 References & Publication
+
+This project has been formally accepted for publication in:
+
+- **Achmad Nurs Syururi Arifin & Salamun Rohman Nudin**  
+  *Prediksi Kepribadian Menggunakan Transfer Learning Model VGG-Face Berbasis Video*  
+  **JATISI (Jurnal Teknik Informatika dan Sistem Informasi)**, Vol. 12 No. 3, September 2025  
+  [Official Journal Website](https://jurnal.mdp.ac.id/index.php/jatisi/index)
+
+📄 [Letter of Acceptance (PDF)](https://github.com/achmadarifin31/Website-Flask-OCEAN-Predictor/blob/798a36179fa3b2d7970f4a233682e700e2fa5b5e/documents/LOA%20JATISI.pdf)
 
 This project is inspired and adapted from the following scientific work:
 
